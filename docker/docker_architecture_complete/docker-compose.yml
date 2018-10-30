@@ -1,0 +1,41 @@
+version: '3.2'
+
+services:
+  collectd:
+    image: fr3nd/collectd
+    privileged: true
+    network_mode: host
+    volumes:
+      - /proc:/mnt/proc:ro
+      - ./collectd.conf:/etc/collectd/collectd.conf
+  influxdb:
+    build: influxdb
+    env_file: configuration.env
+    ports:
+      - '8086:8086'
+      - '8083:8083'
+      - '25826:25826/udp'
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+      - ./influxdb.conf:/etc/influxdb/influxdb.conf
+      - ./types.db:/usr/share/collectd/types.db:ro
+  grafana:
+    build: grafana
+    env_file: configuration.env
+    links:
+      - influxdb
+    ports:
+      - '3000:3000'
+    volumes:
+      - grafana_data:/var/lib/grafana
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
+    links:
+      - influxdb
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+
+volumes:
+  grafana_data: {}
+  influxdb_data: {}
